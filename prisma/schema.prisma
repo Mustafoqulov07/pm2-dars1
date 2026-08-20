@@ -1,0 +1,182 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  phone          String   @unique
+  hashedPassword String
+  fullName       String
+  imageUrl       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  admins    Admin[]
+  sallers   Saller[]
+  customers Customer[]
+
+  @@map("users")
+}
+
+model Admin {
+  id     Int         @id @default(autoincrement())
+  userId Int
+  role   AdminRole[] @default([ADMIN])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("admin")
+}
+
+model Saller {
+  id          Int    @id @default(autoincrement())
+  userId      Int
+  address     String
+  brand       String @unique
+  description String
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  products Product[]
+
+  @@map("saller")
+}
+
+model Customer {
+  id      Int    @id @default(autoincrement())
+  userId  Int
+  address String
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  ratings Rating[]
+  orders  Order[]
+
+  @@map("customer")
+}
+
+model Category {
+  id       Int    @id @default(autoincrement())
+  name     String @unique
+  imageUrl String
+
+  products Product[]
+
+  @@map("category")
+}
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  sallerId    Int
+  categoryId  Int
+  name        String
+  description String
+  price       Decimal
+  quantity    Int
+
+  saller      Saller              @relation(fields: [sallerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category    Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  images      Images_of_product[]
+  orderIteams OrderIteam[]
+  ratings     Rating[]
+
+  @@map("product")
+}
+
+model Images_of_product {
+  id        Int    @id @default(autoincrement())
+  productId Int
+  imageUrl  String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("image_of_product")
+}
+
+model Rating {
+  id         Int    @id @default(autoincrement())
+  customerId Int
+  productId  Int
+  star       Int[]
+  comment    String
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("rating")
+}
+
+model Branch {
+  id      Int    @id @default(autoincrement())
+  name    String
+  address String
+
+  orders Order[]
+
+  @@map("branch")
+}
+
+model Order {
+  id         Int           @id @default(autoincrement())
+  customerId Int
+  branchId   Int
+  totalPrice Decimal
+  status     OrderStatus[]
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  orederIteams OrderIteam[]
+  payments     Payment[]
+
+  @@map("order")
+}
+
+model OrderIteam {
+  id        Int @id @default(autoincrement())
+  productId Int
+  orderId   Int
+  amount    Int
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("orderIteam")
+}
+
+model Payment {
+  id      Int             @id @default(autoincrement())
+  orderId Int
+  type    PaymentType[]
+  status  PaymentStatus[]
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("payment")
+}
+
+enum AdminRole {
+  SUPERADMIN
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CANCEL
+  DELIVERED
+}
+
+enum PaymentType {
+  CASH
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  CANCEL
+  PAID
+}
